@@ -1,0 +1,20 @@
+apiVersion: v2
+publisher: tolusha
+name: apache-pig-debug
+version: 0.0.1
+type: VS Code extension
+displayName: Debug Support for Apache Pig
+title: Debug Support for Apache Pig
+description: This VS Code extension provides support for Apache Pig.
+icon: https://www.eclipse.org/che/images/logo-eclipseche.svg
+repository: https://github.com/tolusha/pig-debug-adapter
+category: Debugger
+firstPublicationDate: "2019-07-08"
+spec:
+  containers:
+    - image: "eclipse/che-remote-plugin-runner-java11:next"
+      name: apache-pig-debug
+      memoryLimit: "512Mi"
+  extensions:
+    - https://github.com/tolusha/apache-pig-vscode-extension/releases/download/0.0.1/apache-pig-debug-0.0.1.vsix
+    - https://github.com/tolusha/apache-pig-vscode-extension/releases/download/0.0.1/Gandola.pig-2.2.0.vsix
