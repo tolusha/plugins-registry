@@ -14,13 +14,13 @@ set -e
 set -u
 
 init() {
-  RELEASE=""
-  BRANCH=
+  RELEASE="$1"
+  BRANCH=$(echo $RELEASE | sed 's/.$/x/')
   GIT_REMOTE_UPSTREAM="git@github.com:che-incubator/chectl.git"
 }
 
 check() {
-  if [[ 0 -lt 1 ]]; then
+  if [[ $# -lt 1 ]]; then
     echo "[ERROR] Wrong number of parameters.\nUsage: ./make-release.sh <version>"
     exit 1
   fi
@@ -28,9 +28,9 @@ check() {
 
 ask() {
   while true; do
-    echo "[INFO] "": (Y)es or (N)o "
+    echo -n "[INFO] "$@": (Y)es or (N)o "
     read -r yn
-    case  in
+    case $yn in
       [Yy]* ) return 0;;
       [Nn]* ) return 1;;
       * ) echo "[INFO] Please answer (Y)es or (N)o. ";;
@@ -39,39 +39,39 @@ ask() {
 }
 
 apply_sed() {
-    SHORT_UNAME=Linux
-  if [ "Linux" == "Darwin" ]; then
-    sed -i '' "" ""
-  elif [ "" == "Linux" ]; then
-    sed -i "" ""
+    SHORT_UNAME=$(uname -s)
+  if [ "$(uname)" == "Darwin" ]; then
+    sed -i '' "$1" "$2"
+  elif [ "${SHORT_UNAME:0:5}" == "Linux" ]; then
+    sed -i "$1" "$2"
   fi
 }
 
 resetChanges() {
   git reset --hard
-  git checkout 
-  git fetch  --prune
-  git pull  
+  git checkout $1
+  git fetch ${GIT_REMOTE_UPSTREAM} --prune
+  git pull ${GIT_REMOTE_UPSTREAM} $1
 }
 
 resetLocalChanges() {
   set +e
-  ask "1. Create  branch?"
-  result=0
+  ask "1. Create $BRANCH branch?"
+  result=$?
   set -e
 
-  if [[  == 0 ]]; then
-    local branchExist=0
-    if [[  == 1 ]]; then
-      echo "[INFO]  exists."
-      resetLocalChanges 
+  if [[ $result == 0 ]]; then
+    local branchExist=$(git ls-remote -q --heads | grep $BRANCH | wc -l)
+    if [[ $branchExist == 1 ]]; then
+      echo "[INFO] $BRANCH exists."
+      resetLocalChanges $BRANCH
     else
-      echo "[INFO]  does not exist. Will be created a new one from master."
+      echo "[INFO] $BRANCH does not exist. Will be created a new one from master."
       resetLocalChanges master
-      git push origin master:
+      git push origin master:$BRANCH
     fi
-    git checkout -B 
-  elif [[  == 1 ]]; then
+    git checkout -B $RELEASE
+  elif [[ $result == 1 ]]; then
     echo "[WARN] Skipped"
   fi
 }
@@ -79,26 +79,26 @@ resetLocalChanges() {
 release() {
   set +e
   ask "2. Release?"
-  result=0
+  result=$?
   set -e
 
-  if [[  == 0 ]]; then
+  if [[ $result == 0 ]]; then
     # Create VERSION file
-    echo "" > VERSION
+    echo "$RELEASE" > VERSION
 
     # replace nightly versions by release version
-    apply_sed "s#quay.io/eclipse/che-server:nightly#quay.io/eclipse/che-server:#g" src/constants.ts
-    apply_sed "s#quay.io/eclipse/che-operator:nightly#quay.io/eclipse/che-operator:#g" src/constants.ts
+    apply_sed "s#quay.io/eclipse/che-server:nightly#quay.io/eclipse/che-server:${RELEASE}#g" src/constants.ts
+    apply_sed "s#quay.io/eclipse/che-operator:nightly#quay.io/eclipse/che-operator:${RELEASE}#g" src/constants.ts
 
     # now replace package.json dependencies
-    apply_sed "s;github.com/eclipse/che#\(.*\)\",;github.com/eclipse/che#\",;g" package.json
-    apply_sed "s;github.com/eclipse/che-operator#\(.*\)\",;github.com/eclipse/che-operator#\",;g" package.json
+    apply_sed "s;github.com/eclipse/che#\(.*\)\",;github.com/eclipse/che#${RELEASE}\",;g" package.json
+    apply_sed "s;github.com/eclipse/che-operator#\(.*\)\",;github.com/eclipse/che-operator#${RELEASE}\",;g" package.json
 
     # build
     yarn
     yarn pack
     yarn test
-  elif [[  == 1 ]]; then
+  elif [[ $result == 1 ]]; then
     echo "[WARN] Skipped"
   fi
 }
@@ -106,13 +106,13 @@ release() {
 commitChanges() {
   set +e
   ask "3. Commit changes?"
-  result=0
+  result=$?
   set -e
 
-  if [[  == 0 ]]; then
+  if [[ $result == 0 ]]; then
     git add -A
-    git commit -s -m "chore(release): release version "
-  elif [[  == 1 ]]; then
+    git commit -s -m "chore(release): release version ${RELEASE}"
+  elif [[ $result == 1 ]]; then
     echo "[WARN] Skipped"
   fi
 }
@@ -120,12 +120,12 @@ commitChanges() {
 pushChanges() {
   set +e
   ask "4. Push changes?"
-  result=0
+  result=$?
   set -e
 
-  if [[  == 0 ]]; then
-    git push origin 
-  elif [[  == 1 ]]; then
+  if [[ $result == 0 ]]; then
+    git push origin $RELEASE
+  elif [[ $result == 1 ]]; then
     echo "[WARN] Skipped"
   fi
 }
@@ -133,12 +133,12 @@ pushChanges() {
 pushChangesToReleaseBranch() {
   set +e
   ask "5. Push changes to release branch?"
-  result=0
+  result=$?
   set -e
 
-  if [[  == 0 ]]; then
-    git push origin :release -f
-  elif [[  == 1 ]]; then
+  if [[ $result == 0 ]]; then
+    git push origin $RELEASE:release -f
+  elif [[ $result == 1 ]]; then
     echo "[WARN] Skipped"
   fi
 }
@@ -146,12 +146,12 @@ pushChangesToReleaseBranch() {
 createPR() {
   set +e
   ask "6. Create PR?"
-  result=0
+  result=$?
   set -e
 
-  if [[  == 0 ]]; then
-    hub pull-request --base  --head  --browse -m "Release version "
-  elif [[  == 1 ]]; then
+  if [[ $result == 0 ]]; then
+    hub pull-request --base ${BRANCH} --head ${RELEASE} --browse -m "Release version ${RELEASE}"
+  elif [[ $result == 1 ]]; then
     echo "[WARN] Skipped"
   fi
 }
@@ -165,6 +165,6 @@ run() {
   createPR
 }
 
-init ""
-check ""
-run ""
+init $@
+check $@
+run $@
