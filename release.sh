@@ -75,6 +75,7 @@ createPR() {
 
 run() {
   checkoutToReleaseBranch
+  touch test.file
   commitChanges
   createReleaseBranch
   createPR
