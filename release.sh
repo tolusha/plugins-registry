@@ -16,7 +16,7 @@ set -u
 init() {
   RELEASE="$1"
   BRANCH=$(echo $RELEASE | sed 's/.$/x/')
-  GIT_REMOTE_UPSTREAM="git@github.com:che-incubator/chectl.git"
+  GIT_REMOTE_UPSTREAM="git@github.com:tolusha/plugins-registry.git"
 }
 
 check() {
