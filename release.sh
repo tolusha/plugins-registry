@@ -47,10 +47,10 @@ checkoutToReleaseBranch() {
   local branchExist=$(git ls-remote -q --heads | grep $BRANCH | wc -l)
   if [[ $branchExist == 1 ]]; then
     echo "[INFO] $BRANCH exists."
-    resetLocalChanges $BRANCH
+    resetChanges $BRANCH
   else
     echo "[INFO] $BRANCH does not exist. Will be created a new one from master."
-    resetLocalChanges master
+    resetChanges master
     git push origin master:$BRANCH
   fi
   git checkout -B $RELEASE
