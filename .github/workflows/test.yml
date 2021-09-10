@@ -37,7 +37,6 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: eclipse-che/che-plugin-registry
-        ref: "${{ github.event.inputs.version }}"
         path: che-plugin-registry 
     - name: Build offline che-plugin-registry
       run: |
@@ -46,6 +45,7 @@ jobs:
         yarn --version
         node --version
         cd che-plugin-registry
+        git co ${{ github.event.inputs.version }}
         rm -rf output && BUILDER=docker ./build.sh --tag ${{ github.event.inputs.version }} --registry quay.io --organization webcenter-che --rhel --offline
 
         docker run --rm -t --entrypoint cat quay.io/webcenter-che/che-plugin-registry:${{ github.event.inputs.version }} /var/www/html/v3/external_images.txt
