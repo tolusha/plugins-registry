@@ -45,7 +45,7 @@ jobs:
         yarn --version
         node --version
         cd che-plugin-registry
-        get fetch
+        git fetch
         git checkout ${{ github.event.inputs.version }}
         rm -rf output && BUILDER=docker ./build.sh --tag ${{ github.event.inputs.version }} --registry quay.io --organization webcenter-che --rhel --offline
 
